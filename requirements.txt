@@ -1,2 +1,5 @@
 httpx==0.28.0
 feedparser==6.0.11
+pinterest-api-sdk==0.2.4
+python-dotenv==0.20.0
+pandas==2.2.3
