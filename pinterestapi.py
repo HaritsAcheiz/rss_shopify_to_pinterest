@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from urllib.parse import urljoin
 import base64
+from converter import *
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ class PinterestApi:
 	redirect_uri: str = None
 
 	# Oauth
-	def get_access_token(self, grant_type='client_credentials', ):
+	def get_access_token(self, grant_type='client_credentials'):
 		endpoint = urljoin(self.sandbox_base_api, '/v5/oauth/token')
 		auth_string = f"{self.client_id}:{self.client_secret}"
 		auth_base64 = base64.b64encode(auth_string.encode()).decode()
@@ -62,18 +63,21 @@ class PinterestApi:
 			"Content-Type": "application/json"
 		}
 
-		with httpx.Client(headers=headers) as client:
-			response = client.post(endpoint, json=payload)
+		for _ in range(3):
+			with httpx.Client(headers=headers) as client:
+				response = client.post(endpoint, json=payload)
 
-			if response.status_code == 200:
-				data = response.json()
-				print(data)
-
-			else:
-				print("Error:", response.status_code, response.text)
+				if response.status_code == 200 or response.status_code == 201:
+					response.json()
+					print("Succeed:", response.status_code, response.text)
+					break
+				else:
+					print("Error:", response.status_code, response.text)
+					print(payload)
+					payload = resize_image(payload)
 
 	def get_upload_url(self, media_type):
-		endpoint = urljoin(self.base_api, '/v5/media')
+		endpoint = urljoin(self.sandbox_base_api, '/v5/media')
 
 		headers = {
 			# "Authorization": f"Bearer {self.access_token}",
@@ -95,7 +99,7 @@ class PinterestApi:
 				print("Error:", response.status_code, response.text)
 
 	# Read
-	def list_pins(self, params):
+	def list_pins(self, params=None):
 		endpoint = urljoin(self.sandbox_base_api, '/v5/pins')
 
 		headers = {
@@ -125,8 +129,8 @@ class PinterestApi:
 			response = client.get(endpoint, params=params)
 
 			if response.status_code == 200:
-				data = response.json()
-				print(data)
+				response.json()
+				print("Succeed:", response.status_code, response.text)
 
 			else:
 				print("Error:", response.status_code, response.text)
@@ -148,7 +152,7 @@ if __name__ == '__main__':
 
 	# app.list_pins(params=params)
 
-	# app.list_boards(params=params)
+	app.list_boards(params=params)
 
 	payload = {
 		"link": "https://www.magiccars.com/products/ride-on-car-covers-a-shield-against-rain-sun-dust-snow-and-leaves",
@@ -170,4 +174,4 @@ if __name__ == '__main__':
 
 	# app.create_pin(payload=payload)
 
-	app.get_upload_url(media_type="video")
+	# app.get_upload_url(media_type="video")
