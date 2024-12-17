@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinterest App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; }
+        header { background-color: #e60023; color: #fff; text-align: center; padding: 1rem; }
+        main { padding: 1.5rem; text-align: center; }
+        a { color: #e60023; font-weight: bold; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .success { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pinterest App</h1>
+    </header>
+    <main>
+        {% if access_granted %}
+            <p class="success">🎉 Access Granted! You can now create pins and upload videos.</p>
+        {% else %}
+            <p>To start using the app, go to <a href="/start_pinterest_auth">/start_pinterest_auth</a> to authorize Pinterest access.</p>
+        {% endif %}
+        <h2>Features</h2>
+        <p>Upload a video by visiting: <a href="/upload_video">/upload_video</a></p>
+        <p>Create pins from a sample CSV file: <a href="/create_pin">/create_pin</a></p>
+    </main>
+</body>
+</html>

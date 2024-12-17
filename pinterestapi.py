@@ -5,6 +5,7 @@ import os
 from urllib.parse import urljoin
 import base64
 from converter import *
+import time
 
 load_dotenv()
 
@@ -18,8 +19,21 @@ class PinterestApi:
 	access_token: str = None
 	authorization_code: str = None
 	redirect_uri: str = None
+	scopes: str = 'boards:read,boards:write,pins:read,pins:write'
 
 	# Oauth
+	def get_auth_url(self):
+		print("Generating Authorization URL")
+		auth_url = (
+			f"https://www.pinterest.com/oauth/?response_type=code"
+			f"&client_id={self.client_id}"
+			f"&redirect_uri={self.redirect_uri}"
+			f"&scope={self.scopes}"
+		)
+		print(f"Authorization URL: {auth_url}")
+
+		return auth_url
+
 	def get_access_token(self, grant_type='client_credentials'):
 		endpoint = urljoin(self.sandbox_base_api, '/v5/oauth/token')
 		auth_string = f"{self.client_id}:{self.client_secret}"
@@ -39,7 +53,8 @@ class PinterestApi:
 			data = {
 				"grant_type": "authorization_code",
 				"code": self.authorization_code,
-				"redirect_uri": self.redirect_uri
+				"redirect_uri": self.redirect_uri,
+				"scope": "boards:read,boards:write,pins:read,pins:write"
 			}
 
 		with httpx.Client(headers=headers) as client:
@@ -63,18 +78,22 @@ class PinterestApi:
 			"Content-Type": "application/json"
 		}
 
-		for _ in range(3):
+		error_count = 0
+		while error_count < 4:
 			with httpx.Client(headers=headers) as client:
 				response = client.post(endpoint, json=payload)
 
 				if response.status_code == 200 or response.status_code == 201:
-					response.json()
 					print("Succeed:", response.status_code, response.text)
-					break
+					error_count = 0
+					return response
 				else:
-					print("Error:", response.status_code, response.text)
-					print(payload)
 					payload = resize_image(payload)
+					print("Resize image")
+					error_count += 1
+		if error_count >= 4:
+			print("Error:", response.status_code, response.text)
+			return response
 
 	def get_upload_url(self, media_type):
 		endpoint = urljoin(self.sandbox_base_api, '/v5/media')
@@ -140,37 +159,43 @@ class PinterestApi:
 	# Delete
 
 
-if __name__ == '__main__':
-	app = PinterestApi(client_id=os.getenv('PINTEREST_APP_ID'), client_secret=os.getenv('PINTEREST_SECRET_KEY'))
-	app.get_access_token()
+# if __name__ == '__main__':
+# 	app = PinterestApi(
+# 		client_id=os.getenv('PINTEREST_APP_ID'),
+# 		client_secret=os.getenv('PINTEREST_SECRET_KEY'),
+# 		redirect_uri=os.getenv('REDIRECT_URI'),
+# 		# authorization_code='79fcb1e3b8ea006fd780f734e49100af7cd731a3'
+# 	)
 
-	params = {
-		"page_size": 100
-	}
+# 	app.get_access_token(grant_type='authorization_code')
 
-	print(app.access_token)
+	# params = {
+	# 	"page_size": 100
+	# }
+
+	# print(app.access_token)
 
 	# app.list_pins(params=params)
 
-	app.list_boards(params=params)
+	# app.list_boards(params=params)
 
-	payload = {
-		"link": "https://www.magiccars.com/products/ride-on-car-covers-a-shield-against-rain-sun-dust-snow-and-leaves",
-		"title": "12V Aqua Marina Electric Pump (16 psi)",
-		"description": "12V Electric Pump Specifications: 12V DC electric pump up to 16psi, 110W Inflates: iSUP boards, kayaks, boats and air platforms LCD screen Cigarette lighter or battery attachable Inflate: 70L/min.",
-		"dominant_color": "#6E7874",
-		"alt_text": "alt_text",
-		"board_id": "1089026822333747466",
-		# "board_section_id": "string",
-		"media_source": {
-			"source_type": "image_url",
-			"url": "https://cdn.shopify.com/s/files/1/2245/9711/files/12V_Aqua_Marina_Electric_Pump_16_psi_-_DTI_Direct_USA-2597608.png",
-			"is_standard": True
-		}
+	# payload = {
+	# 	"link": "https://www.magiccars.com/products/ride-on-car-covers-a-shield-against-rain-sun-dust-snow-and-leaves",
+	# 	"title": "12V Aqua Marina Electric Pump (16 psi)",
+	# 	"description": "12V Electric Pump Specifications: 12V DC electric pump up to 16psi, 110W Inflates: iSUP boards, kayaks, boats and air platforms LCD screen Cigarette lighter or battery attachable Inflate: 70L/min.",
+	# 	"dominant_color": "#6E7874",
+	# 	"alt_text": "alt_text",
+	# 	"board_id": "1089026822333747466",
+	# 	# "board_section_id": "string",
+	# 	"media_source": {
+	# 		"source_type": "image_url",
+	# 		"url": "https://cdn.shopify.com/s/files/1/2245/9711/files/12V_Aqua_Marina_Electric_Pump_16_psi_-_DTI_Direct_USA-2597608.png",
+	# 		"is_standard": True
+	# 	}
 		# "parent_pin_id": "string",
 		# "note": "string",
 		# "sponsor_id": "string"
-	}
+	# }
 
 	# app.create_pin(payload=payload)
 

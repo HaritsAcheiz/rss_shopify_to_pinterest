@@ -1,6 +1,7 @@
 import pandas as pd
 import ast
 import re
+import os
 
 
 def to_payload(df_row):
@@ -94,6 +95,47 @@ def resize_image(payload):
         print(payload)
 
     return payload
+
+
+def chunk_dataframe(df, chunk_size=200, output_dir='chunked_data', prefix='chunk_'):
+    os.makedirs(output_dir, exist_ok=True)
+    output_files = []
+    num_chunks = (len(df) + chunk_size - 1) // chunk_size
+
+    for i in range(num_chunks):
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, len(df))
+
+        chunk = df.iloc[start_idx:end_idx]
+        output_path = os.path.join(output_dir, f'{prefix}{i+1}.csv')
+
+        chunk.to_csv(output_path, index=False)
+        output_files.append(output_path)
+
+        print(f'Saved {output_path}: {len(chunk)} rows')
+
+
+def make_titles_unique(df, title_column='Title'):
+    df_unique = df.copy()
+    title_counts = {}
+
+    # Function to generate unique title
+    def get_unique_title(title):
+        if title not in title_counts:
+            # First occurrence of the title
+            title_counts[title] = 0
+            return title
+        else:
+            # Increment count for duplicate titles
+            title_counts[title] += 1
+            # Add sequence number to make it unique
+            return f"{title} ({title_counts[title]})"
+
+    # Apply unique title generation
+    df_unique[title_column] = df_unique[title_column].apply(get_unique_title)
+
+    return df_unique
+
 
 if __name__ == '__main__':
     df = pd.read_csv('data/grouped_data.csv')
