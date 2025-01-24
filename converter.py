@@ -2,51 +2,56 @@ import pandas as pd
 import ast
 import re
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-def to_payload(df_row):
-    payload = dict()
-    payload['link'] = df_row['Link']
-    if len(df_row['Title']) > 99:
-        payload['title'] = df_row['Title'][0:99]
-    else:
-        payload['title'] = df_row['Title']
-    if len(df_row['Description']) > 799:
-        payload['description'] = df_row['Description'][0:799]
-    else:
-        payload['description'] = df_row['Description']
-    payload['board_id'] = '1089026822333747466'
-    payload['media_source'] = dict()
-    items = list()
-    media_url_list = ast.literal_eval(df_row['Media URL'])
-    # media_thumbnail_list = df['Thumbnail']
-    if len(media_url_list) > 1:
-        payload['media_source']['source_type'] = 'multiple_image_urls'
-        if len(media_url_list) < 5:
-            for i in range(len(media_url_list)):
-                item = {
-                    # 'source_type': 'image_base_64',
-                    # 'title': payload['title'],
-                    # 'description': payload['description'],
-                    # 'link': payload['link'],
-                    'url': media_url_list[i] + '&width=1200&height=1200&crop=center'
-                }
-                items.append(item)
+def to_payload(df_row, type='create_pin'):
+    if type == 'create_pin':
+        payload = dict()
+        payload['link'] = df_row['Link']
+        if len(df_row['Title']) > 99:
+            payload['title'] = df_row['Title'][0:99]
         else:
-            for i in range(5):
-                item = {
-                    # 'source_type': 'image_base_64',
-                    # 'title': payload['title'],
-                    # 'description': payload['description'],
-                    # 'link': payload['link'],
-                    'url': media_url_list[i] + '&width=1200&height=1200&crop=center'
-                }
-                items.append(item)
-        payload['media_source']['items'] = items
-    else:
-        payload['media_source']['source_type'] = 'image_url'
-        payload['media_source']['url'] = media_url_list[0] + '&width=1200&height=1200&crop=center'
-        payload['media_source']['is_standard'] = False
+            payload['title'] = df_row['Title']
+        if len(df_row['Description']) > 799:
+            payload['description'] = df_row['Description'][0:799]
+        else:
+            payload['description'] = df_row['Description']
+        payload['board_id'] = os.getenv('PINTEREST_BOARDS_ID')
+        payload['media_source'] = dict()
+        items = list()
+        media_url_list = ast.literal_eval(df_row['Media URL'])
+        # media_thumbnail_list = df['Thumbnail']
+        if len(media_url_list) > 1:
+            payload['media_source']['source_type'] = 'multiple_image_urls'
+            if len(media_url_list) < 5:
+                for i in range(len(media_url_list)):
+                    item = {
+                        # 'source_type': 'image_base_64',
+                        # 'title': payload['title'],
+                        # 'description': payload['description'],
+                        # 'link': payload['link'],
+                        'url': media_url_list[i] + '&width=900&height=900&crop=center'
+                    }
+                    items.append(item)
+            else:
+                for i in range(5):
+                    item = {
+                        # 'source_type': 'image_base_64',
+                        # 'title': payload['title'],
+                        # 'description': payload['description'],
+                        # 'link': payload['link'],
+                        'url': media_url_list[i] + '&width=900&height=900&crop=center'
+                    }
+                    items.append(item)
+            payload['media_source']['items'] = items
+        else:
+            payload['media_source']['source_type'] = 'image_url'
+            payload['media_source']['url'] = media_url_list[0] + '&width=900&height=900&crop=center'
+            payload['media_source']['is_standard'] = True
+    elif type == 'fetch_video_url':
+        payload = dict()
 
     return payload
 
@@ -58,15 +63,15 @@ def resize_image(payload):
             matches = re.search(r'width=(\d+)&height=(\d+)', item['url'])
             width = matches.group(1)
             height = matches.group(2)
-            if width == '1200':
-                url_modified = re.sub(r'width=\d+', 'width=900', item['url'])
-                url_modified = re.sub(r'height=\d+', 'height=900', url_modified)
-            elif width == '900':
-                url_modified = re.sub(r'width=\d+', 'width=600', item['url'])
-                url_modified = re.sub(r'height=\d+', 'height=600', url_modified)
-            elif width == '600':
+            # if width == '1200':
+            #     url_modified = re.sub(r'width=\d+', 'width=900', item['url'])
+            #     url_modified = re.sub(r'height=\d+', 'height=900', url_modified)
+            if width == '900':
                 url_modified = re.sub(r'width=\d+', 'width=300', item['url'])
                 url_modified = re.sub(r'height=\d+', 'height=300', url_modified)
+            # elif width == '600':
+            #     url_modified = re.sub(r'width=\d+', 'width=300', item['url'])
+            #     url_modified = re.sub(r'height=\d+', 'height=300', url_modified)
             elif width == '300':
                 url_modified = re.sub(r'width=\d+', 'width=150', item['url'])
                 url_modified = re.sub(r'height=\d+', 'height=150', url_modified)
@@ -79,15 +84,15 @@ def resize_image(payload):
         width = matches.group(1)
         height = matches.group(2)
         payload['media_source']['url']
-        if width == '1200':
-            url_modified = re.sub(r'width=\d+', 'width=900', payload['media_source']['url'])
-            url_modified = re.sub(r'height=\d+', 'height=900', url_modified)
-        elif width == '900':
-            url_modified = re.sub(r'width=\d+', 'width=600', payload['media_source']['url'])
-            url_modified = re.sub(r'height=\d+', 'height=600', url_modified)
-        elif width == '600':
+        # if width == '1200':
+        #     url_modified = re.sub(r'width=\d+', 'width=900', payload['media_source']['url'])
+        #     url_modified = re.sub(r'height=\d+', 'height=900', url_modified)
+        if width == '900':
             url_modified = re.sub(r'width=\d+', 'width=300', payload['media_source']['url'])
             url_modified = re.sub(r'height=\d+', 'height=300', url_modified)
+        # elif width == '600':
+        #     url_modified = re.sub(r'width=\d+', 'width=300', payload['media_source']['url'])
+        #     url_modified = re.sub(r'height=\d+', 'height=300', url_modified)
         elif width == '300':
             url_modified = re.sub(r'width=\d+', 'width=150', payload['media_source']['url'])
             url_modified = re.sub(r'height=\d+', 'height=150', url_modified)
@@ -135,6 +140,14 @@ def make_titles_unique(df, title_column='Title'):
     df_unique[title_column] = df_unique[title_column].apply(get_unique_title)
 
     return df_unique
+
+
+def group_data(filepath):
+    df = pd.read_csv(filepath)
+    df = df[pd.notna(df['Link'])]
+    df.fillna('', inplace=True)
+    grouped_df = df.groupby(['Title', 'Pinterest board', 'Description', 'Link', 'Publish date', 'Keywords']).agg(list).reset_index()
+    grouped_df.to_csv('data/grouped_data.csv', index=False)
 
 
 if __name__ == '__main__':

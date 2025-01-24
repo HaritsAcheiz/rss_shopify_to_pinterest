@@ -6,9 +6,9 @@ from urllib.parse import urljoin
 import base64
 from converter import *
 import time
+import json
 
 load_dotenv()
-
 
 @dataclass
 class PinterestApi:
@@ -35,7 +35,7 @@ class PinterestApi:
 		return auth_url
 
 	def get_access_token(self, grant_type='client_credentials'):
-		endpoint = urljoin(self.sandbox_base_api, '/v5/oauth/token')
+		endpoint = urljoin(self.base_api, '/v5/oauth/token')
 		auth_string = f"{self.client_id}:{self.client_secret}"
 		auth_base64 = base64.b64encode(auth_string.encode()).decode()
 
@@ -63,15 +63,24 @@ class PinterestApi:
 			if response.status_code == 200:
 				data = response.json()
 				self.access_token = data.get("access_token")
+				with open('access_token.json', "w") as file:
+					json.dump({"access_token": self.access_token}, file)
 
 			else:
 				print("Error:", response.status_code, response.text)
 
 				return None
 
+	def retriev_access_token(self):
+		with open('access_token.json', "r") as file:
+			data = json.load(file)
+			retrieved_token = data.get("access_token")
+
+		return retrieved_token
+
 	# Create
 	def create_pin(self, payload):
-		endpoint = urljoin(self.sandbox_base_api, '/v5/pins')
+		endpoint = urljoin(self.base_api, '/v5/pins')
 
 		headers = {
 			"Authorization": f"Bearer {self.access_token}",
@@ -79,7 +88,7 @@ class PinterestApi:
 		}
 
 		error_count = 0
-		while error_count < 4:
+		while error_count < 3:
 			with httpx.Client(headers=headers) as client:
 				response = client.post(endpoint, json=payload)
 
@@ -88,38 +97,58 @@ class PinterestApi:
 					error_count = 0
 					return response
 				else:
+					print("Resize image:", response.status_code, response.text)
+					time.sleep(3)
 					payload = resize_image(payload)
-					print("Resize image")
 					error_count += 1
-		if error_count >= 4:
+		if error_count >= 3:
 			print("Error:", response.status_code, response.text)
 			return response
 
 	def get_upload_url(self, media_type):
-		endpoint = urljoin(self.sandbox_base_api, '/v5/media')
+		endpoint = urljoin(self.base_api, '/v5/media')
 
 		headers = {
-			# "Authorization": f"Bearer {self.access_token}",
+			"Authorization": f"Bearer {self.access_token}",
 			"Content-Type": "application/json"
 		}
 
 		payload = {
-			"media_type": media_type,
+			"media_type": media_type
 		}
 
 		with httpx.Client(headers=headers) as client:
 			response = client.post(endpoint, json=payload)
 
-			if response.status_code == 200:
-				data = response.json()
-				print(data)
+			if response.status_code == 201:
+				return response.json()
 
 			else:
 				print("Error:", response.status_code, response.text)
+				return response
+
+	def upload_video(self, video_url):
+		headers = {
+			"Authorization": f"Bearer {access_token}"
+		}
+
+		files = {
+			"media": open(video_file_path, "rb")
+		}
+
+		response = requests.post(upload_url, headers=headers, files=files)
+		if response.status_code != 201:
+			return {"error": f"Video upload failed: {response.text}"}
+
+		upload_response = response.json()
+		media_id = upload_response.get("id")  # Media ID for the uploaded video
+
+		if not media_id:
+			return {"error": "Media ID not received from Pinterest"}
 
 	# Read
 	def list_pins(self, params=None):
-		endpoint = urljoin(self.sandbox_base_api, '/v5/pins')
+		endpoint = urljoin(self.base_api, '/v5/pins')
 
 		headers = {
 			"Authorization": f"Bearer {self.access_token}",
@@ -137,7 +166,7 @@ class PinterestApi:
 				print("Error:", response.status_code, response.text)
 
 	def list_boards(self, params):
-		endpoint = urljoin(self.sandbox_base_api, '/v5/boards')
+		endpoint = urljoin(self.base_api, '/v5/boards')
 
 		headers = {
 			"Authorization": f"Bearer {self.access_token}",
@@ -148,7 +177,7 @@ class PinterestApi:
 			response = client.get(endpoint, params=params)
 
 			if response.status_code == 200:
-				response.json()
+				return response
 				print("Succeed:", response.status_code, response.text)
 
 			else:
@@ -159,25 +188,25 @@ class PinterestApi:
 	# Delete
 
 
-# if __name__ == '__main__':
-# 	app = PinterestApi(
-# 		client_id=os.getenv('PINTEREST_APP_ID'),
-# 		client_secret=os.getenv('PINTEREST_SECRET_KEY'),
-# 		redirect_uri=os.getenv('REDIRECT_URI'),
-# 		# authorization_code='79fcb1e3b8ea006fd780f734e49100af7cd731a3'
-# 	)
+if __name__ == '__main__':
+	app = PinterestApi(
+		client_id=os.getenv('PINTEREST_APP_ID'),
+		client_secret=os.getenv('PINTEREST_SECRET_KEY'),
+		redirect_uri=os.getenv('REDIRECT_URI'),
+		# authorization_code='79fcb1e3b8ea006fd780f734e49100af7cd731a3'
+	)
 
-# 	app.get_access_token(grant_type='authorization_code')
+	app.get_access_token(grant_type='client_credentials')
 
-	# params = {
-	# 	"page_size": 100
-	# }
+	params = {
+		"page_size": 100
+	}
 
 	# print(app.access_token)
 
 	# app.list_pins(params=params)
 
-	# app.list_boards(params=params)
+	app.list_boards(params=params)
 
 	# payload = {
 	# 	"link": "https://www.magiccars.com/products/ride-on-car-covers-a-shield-against-rain-sun-dust-snow-and-leaves",
