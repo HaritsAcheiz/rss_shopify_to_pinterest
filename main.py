@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	# df = pd.read_csv("data/grouped_data.csv")
 	# chunk_dataframe(df)
 
-	filepath = "chunked_data/chunk_18.csv"
+	filepath = "chunked_data/chunk_30.csv"
 	df = pd.read_csv(filepath)
 
 	if 'is_imported' not in df.columns:

@@ -1286,7 +1286,6 @@ class ShopifyApp:
 
         return result['data']['productVariants']['edges'][0]['node']['id']
 
-
     def create_collection(self, client, descriptionHtml, image_src, title, appliedDisjuntively, column, relation, condition):
         # product_id = pd.read_csv(f'Product_By_Category2/ {title}.csv', usecols='product_id')['product_id'].tolist()
 
@@ -1372,8 +1371,10 @@ class ShopifyApp:
 
         variables = {'handle': "{}".format(handle)}
 
-        response = client.post(f'https://{self.store_name}.myshopify.com/admin/api/2023-07/graphql.json',
-                                   json={'query': query, 'variables': variables})
+        response = client.post(
+            f'https://{self.store_name}.myshopify.com/admin/api/2023-07/graphql.json',
+            json={'query': query, 'variables': variables}
+        )
 
         print(response)
         print(response.json())
@@ -1516,14 +1517,15 @@ class ShopifyApp:
 
         return response.json()
 
+
 if __name__ == '__main__':
 
     s = ShopifyApp(store_name=os.getenv('STORE_NAME'), access_token=os.getenv('ACCESS_TOKEN'))
     client = s.create_session()
 
-    handles = ['38-exit-ez-fx-kit', 'rest-in-peace-cross-tombstone']
-    response = s.get_products_id_by_handle(client, handles=handles)
-    print(response)
+    # handles = ['38-exit-ez-fx-kit', 'rest-in-peace-cross-tombstone']
+    # response = s.get_products_id_by_handle(client, handles=handles)
+    # print(response)
     # s.get_metafields(client)
 
     # activate product
@@ -1545,6 +1547,7 @@ if __name__ == '__main__':
     #         created = s.import_status(client)
 
 
+
     # publish unpublish
     # has_next_page = True
     # while has_next_page:
@@ -1563,7 +1566,6 @@ if __name__ == '__main__':
     #     while not created:
     #         created = s.import_status(client)
 
-
     # s.query_product_by_handle(client, handle='812-8-82')
 
     # s.remove_scheduled_publish_date_updated(client, 'gid://shopify/Product/7625659777081')
@@ -1576,7 +1578,6 @@ if __name__ == '__main__':
     #     df = pd.read_csv(filename)
     #     df['product_id'] = df.apply(lambda x: s.query_product_by_handle(client, x['Handle']), axis=1)
     #     df.to_csv(filename, index=False)
-
 
     # df = pd.read_csv('Collection_Feeds_rev2.csv')
     # df.apply(lambda x: s.create_collection(client=client, descriptionHtml=x['descriptionHtml'],

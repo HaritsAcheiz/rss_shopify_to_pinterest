@@ -206,7 +206,8 @@ if __name__ == '__main__':
 
 	# app.list_pins(params=params)
 
-	app.list_boards(params=params)
+	response = app.list_boards(params=params)
+	print(response.json())
 
 	# payload = {
 	# 	"link": "https://www.magiccars.com/products/ride-on-car-covers-a-shield-against-rain-sun-dust-snow-and-leaves",
